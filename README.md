@@ -33,4 +33,4 @@ This project now includes JWT-based authentication with the following endpoints:
 
 ---
 
-Author: Github Copilot (`Raptor mini (Preview)`)
+**Author:** Github Copilot (`Raptor mini (Preview)`)
