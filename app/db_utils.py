@@ -1,6 +1,7 @@
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
+from passlib.context import CryptContext
 
 # For production, this will be an RDBMS like PostgreSQL or similar
 DB_PATH = Path(__file__).parent.parent / "descope_demo.db"
@@ -26,7 +27,8 @@ def init_db():
                 id       INTEGER PRIMARY KEY AUTOINCREMENT,
                 name     TEXT    NOT NULL,
                 email    TEXT    NOT NULL UNIQUE,
-                bio      TEXT
+                bio      TEXT,
+                hashed_password TEXT NOT NULL
             )
         """)
 
@@ -41,10 +43,22 @@ def get_user_by_email(email: str) -> sqlite3.Row | None:
 
 # --- Seeding ---
 
+# Manually added for hashing dummy user passwords
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+def get_password_hash(password):
+    return pwd_context.hash(password)
+
 DUMMY_USERS = [
-    {"name": "Manish",   "email": "manish@example.com",   "bio": "Loves building stuff and writing."},
-    {"name": "Jakkie",   "email": "jakkie@example.com",   "bio": "Managing many responsibilities"},
-    {"name": "Kirstin",  "email": "kirstin@example.com",  "bio": "Excellent editor"},
+    
+    # ---------->>> Original (incorrect), hardcoded password hash for "password123" by Gemini Code Assist
+    # {"name": "Manish",   "email": "manish@example.com",   "bio": "Loves building stuff and writing.", "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s57OT697.t95O"}, # password123
+    # {"name": "Jakkie",   "email": "jakkie@example.com",   "bio": "Managing many responsibilities", "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s57OT697.t95O"},
+    # {"name": "Kirstin",  "email": "kirstin@example.com",  "bio": "Excellent editor", "hashed_password": "$2b$12$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36WQoeG6L6s57OT697.t95O"},
+
+    # ---------->>> Manually corrected hashing code to ensure the password hash is valid and corresponds to "password123"    
+    {"name": "Manish",   "email": "manish@example.com",   "bio": "Loves building stuff and writing.", "hashed_password": get_password_hash("password123")}, # password123
+    {"name": "Jakkie",   "email": "jakkie@example.com",   "bio": "Managing many responsibilities", "hashed_password": get_password_hash("password123")},
+    {"name": "Kirstin",  "email": "kirstin@example.com",  "bio": "Excellent editor", "hashed_password": get_password_hash("password123")},
 ]
 
 
@@ -53,8 +67,8 @@ def seed_users(users: list[dict] = DUMMY_USERS):
     with get_connection() as conn:
         conn.executemany(
             """
-            INSERT OR IGNORE INTO user_profiles (name, email, bio)
-            VALUES (:name, :email, :bio)
+            INSERT OR IGNORE INTO user_profiles (name, email, bio, hashed_password)
+            VALUES (:name, :email, :bio, :hashed_password)
             """,
             users,
         )
